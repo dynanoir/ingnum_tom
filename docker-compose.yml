@@ -1,20 +1,19 @@
 version: '3.8'
 
 services:
-  customer-service:
+  # Service PHP - Retourne votre prénom
+  php-service:
     build:
-      context: ./CustomerService
+      context: ./PhpService
       dockerfile: Dockerfile
-    container_name: customer-service
+    container_name: php-service
     ports:
-      - "8081:8081"
-    environment:
-      - SPRING_APPLICATION_NAME=customer-service
-      - SERVER_PORT=8081
+      - "8081:8000"
     networks:
       - microservices-network
     restart: unless-stopped
 
+  # Service Java - Appelle le service PHP
   rental-service:
     build:
       context: ./RentalService
@@ -25,7 +24,7 @@ services:
     environment:
       - SPRING_APPLICATION_NAME=rental-service
       - SERVER_PORT=8080
-      - CUSTOMER_SERVICE_URL=http://customer-service:8081
+      - CUSTOMER_SERVICE_URL=http://php-service:8000
       - SPRING_DATASOURCE_URL=jdbc:mysql://rental-mysql:3306/rentaldb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=rental_user
       - SPRING_DATASOURCE_PASSWORD=rental_password
@@ -35,10 +34,11 @@ services:
     depends_on:
       rental-mysql:
         condition: service_healthy
-      customer-service:
+      php-service:
         condition: service_started
     restart: unless-stopped
 
+  # Base de données MySQL
   rental-mysql:
     image: mysql:8.0
     container_name: rental-mysql
